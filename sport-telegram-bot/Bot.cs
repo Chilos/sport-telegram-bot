@@ -40,7 +40,8 @@ namespace sport_telegram_bot
             _logger.LogInformation("Start Bot");
             return Task.CompletedTask;
         }
-        private async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+        private async Task HandleUpdateAsync(ITelegramBotClient botClient,
+            Update update, CancellationToken cancellationToken)
         {
             if (update.Type == UpdateType.Message)
             {
@@ -49,13 +50,20 @@ namespace sport_telegram_bot
                 switch (update.Message.Text)
                 {
                     case "/add_train":
-                        await botClient.SendTextMessageAsync(update.Message.Chat, "Выберите день тренировки",replyMarkup: DateChooseMenu(),  cancellationToken: cancellationToken);
+                        await botClient.SendTextMessageAsync(update.Message.Chat,
+                            "Выберите день тренировки", 
+                            replyMarkup: DateChooseMenu(),  
+                            cancellationToken: cancellationToken);
                         break;
                     case "/database":
-                        await botClient.SendTextMessageAsync(update.Message.Chat, $"База данных: {_configuration["DATABASE_URL"]}",  cancellationToken: cancellationToken);
+                        await botClient.SendTextMessageAsync(update.Message.Chat, 
+                            $"База данных: {_configuration["DATABASE_URL"]}", 
+                            cancellationToken: cancellationToken);
                         break;
                     default: 
-                        await botClient.SendTextMessageAsync(update.Message.Chat, "Всякое разное описание",  cancellationToken: cancellationToken);
+                        await botClient.SendTextMessageAsync(update.Message.Chat, 
+                            "Всякое разное описание",
+                            cancellationToken: cancellationToken);
                         break;
                 }
             }
@@ -69,14 +77,23 @@ namespace sport_telegram_bot
                 {
                     case "trainDate":
                         var date = DateTime.Parse(res[1]);
-                        await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id, update.CallbackQuery.Message.MessageId, $"Дата тренировки выбрана: {date:dd.MM}",  cancellationToken: cancellationToken);
-                        await botClient.SendTextMessageAsync(update.CallbackQuery.Message!.Chat.Id, "Выберите тип тренировки",replyMarkup: TrainChooseMenu(date),  cancellationToken: cancellationToken);
+                        await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id,
+                            update.CallbackQuery.Message.MessageId, 
+                            $"Дата тренировки выбрана: {date:dd.MM}", 
+                            cancellationToken: cancellationToken);
+                        await botClient.SendTextMessageAsync(update.CallbackQuery.Message!.Chat.Id, 
+                            "Выберите тип тренировки", 
+                            replyMarkup: TrainChooseMenu(date), 
+                            cancellationToken: cancellationToken);
                         break;
                     
                     case "trainType":
                         var typeId = int.Parse(res[1]);
                         var trainDate = DateTime.Parse(res[2]);
-                        await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id, update.CallbackQuery.Message.MessageId, $"На {trainDate:dd.MM}, выбрана тренировка типа: {typeId}",  cancellationToken: cancellationToken);
+                        await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id, 
+                            update.CallbackQuery.Message.MessageId, 
+                            $"На {trainDate:dd.MM}, выбрана тренировка типа: {typeId}", 
+                            cancellationToken: cancellationToken);
                         break;
                 }
             }
@@ -107,26 +124,14 @@ namespace sport_telegram_bot
             return new InlineKeyboardMarkup(buttons);
         }
         
-        /*private async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
-        {
-            if (update.Message is Message message)
-            {
-                _logger.LogInformation(message.Text);
-                //await botClient.SendTextMessageAsync(message.Chat, "Hello",  cancellationToken: cancellationToken);
-                await botClient.SendTextMessageAsync(message.Chat, "Hello", replyMarkup: new InlineKeyboardMarkup(new [] { InlineKeyboardButton.WithSwitchInlineQuery("qwe", $"qwe{1}")}),  cancellationToken: cancellationToken);
-            }
-
-            if (update.CallbackQuery != null)
-            {
-                _logger.LogInformation(update.CallbackQuery.Data);
-            }
-        }*/
-
-        static async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+        static async Task HandleErrorAsync(ITelegramBotClient botClient,
+            Exception exception, CancellationToken cancellationToken)
         {
             if (exception is ApiRequestException apiRequestException)
             {
-                await botClient.SendTextMessageAsync(123, apiRequestException.ToString(), cancellationToken: cancellationToken);
+                await botClient.SendTextMessageAsync(123, 
+                    apiRequestException.ToString(),
+                    cancellationToken: cancellationToken);
             }
         }
 
