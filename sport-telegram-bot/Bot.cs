@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
@@ -20,11 +21,13 @@ namespace sport_telegram_bot
     {
         private readonly ILogger<Bot> _logger;
         private readonly TelegramBotClient _client;
+        private readonly IConfiguration _configuration;
 
-        public Bot(ILogger<Bot> logger, TelegramBotClient client)
+        public Bot(ILogger<Bot> logger, TelegramBotClient client, IConfiguration configuration)
         {
             _logger = logger;
             _client = client;
+            _configuration = configuration;
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -47,6 +50,9 @@ namespace sport_telegram_bot
                 {
                     case "/add_train":
                         await botClient.SendTextMessageAsync(update.Message.Chat, "Выберите день тренировки",replyMarkup: DateChooseMenu(),  cancellationToken: cancellationToken);
+                        break;
+                    case "/database":
+                        await botClient.SendTextMessageAsync(update.Message.Chat, $"База данных: {_configuration["DATABASE_URL"]}",  cancellationToken: cancellationToken);
                         break;
                     default: 
                         await botClient.SendTextMessageAsync(update.Message.Chat, "Всякое разное описание",  cancellationToken: cancellationToken);
