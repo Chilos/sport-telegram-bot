@@ -60,6 +60,11 @@ namespace sport_telegram_bot
                             $"База данных: {_configuration["DATABASE_URL"]}", 
                             cancellationToken: cancellationToken);
                         break;
+                    case "/photo":
+                        await botClient.SendPhotoAsync(update.Message.Chat, 
+                            $"База данных: {_configuration["DATABASE_URL"]}", 
+                            cancellationToken: cancellationToken);
+                        break;
                     default: 
                         await botClient.SendTextMessageAsync(update.Message.Chat, 
                             "Всякое разное описание",

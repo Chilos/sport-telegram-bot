@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <RootNamespace>sport_telegram_bot.Persistence</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.10" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\sport-telegram-bot.Application\sport-telegram-bot.Application.csproj" />
+      <ProjectReference Include="..\sport-telegram-bot.Domain\sport-telegram-bot.Domain.csproj" />
+    </ItemGroup>
+
+</Project>

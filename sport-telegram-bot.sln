@@ -4,6 +4,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{5CFAD729-42E
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sport-telegram-bot", "sport-telegram-bot\sport-telegram-bot.csproj", "{90E77C4E-B2FA-4559-9C1D-DF726AC94BA7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sport-telegram-bot.Application", "sport-telegram-bot.Application\sport-telegram-bot.Application.csproj", "{E684A543-67A1-4A92-B2DF-6946EF93393C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sport-telegram-bot.Domain", "sport-telegram-bot.Domain\sport-telegram-bot.Domain.csproj", "{029EFD41-F88B-463E-B446-D18F9B5A073E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "sport-telegram-bot.Persistence", "sport-telegram-bot.Persistence\sport-telegram-bot.Persistence.csproj", "{FCA51EF1-86ED-461E-AB2A-25F05CB47D13}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -11,11 +17,24 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{90E77C4E-B2FA-4559-9C1D-DF726AC94BA7} = {5CFAD729-42EC-4243-8FF1-D0915762A692}
+		{E684A543-67A1-4A92-B2DF-6946EF93393C} = {5CFAD729-42EC-4243-8FF1-D0915762A692}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{90E77C4E-B2FA-4559-9C1D-DF726AC94BA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{90E77C4E-B2FA-4559-9C1D-DF726AC94BA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{90E77C4E-B2FA-4559-9C1D-DF726AC94BA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{90E77C4E-B2FA-4559-9C1D-DF726AC94BA7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E684A543-67A1-4A92-B2DF-6946EF93393C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E684A543-67A1-4A92-B2DF-6946EF93393C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E684A543-67A1-4A92-B2DF-6946EF93393C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E684A543-67A1-4A92-B2DF-6946EF93393C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{029EFD41-F88B-463E-B446-D18F9B5A073E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{029EFD41-F88B-463E-B446-D18F9B5A073E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{029EFD41-F88B-463E-B446-D18F9B5A073E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{029EFD41-F88B-463E-B446-D18F9B5A073E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCA51EF1-86ED-461E-AB2A-25F05CB47D13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCA51EF1-86ED-461E-AB2A-25F05CB47D13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCA51EF1-86ED-461E-AB2A-25F05CB47D13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCA51EF1-86ED-461E-AB2A-25F05CB47D13}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
