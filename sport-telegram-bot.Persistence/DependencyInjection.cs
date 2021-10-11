@@ -9,10 +9,10 @@ namespace sport_telegram_bot.Persistence
     {
         public static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
         {
-            var connectionString = configuration["DbConnection"];
+            var connectionString = configuration["DATABASE_URL"];
             services.AddDbContext<BotDbContext>(options =>
             {
-                options.UseNpgsql( );
+                options.UseNpgsql(PostgresConnectionStringFactory.GetConnectionStringFromUrl(connectionString));
             });
             services.AddScoped<IBotDbContext>(provider => provider.GetService<BotDbContext>());
             return services;

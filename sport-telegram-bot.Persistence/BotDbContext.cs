@@ -12,6 +12,8 @@ namespace sport_telegram_bot.Persistence
         public DbSet<ExerciseRecord> ExerciseRecord { get; set; }
         public DbSet<TrainRecord> TrainRecord { get; set; }
 
+        public BotDbContext(DbContextOptions<BotDbContext> options): base(options) {}
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfiguration(new ExerciseConfiguration());
