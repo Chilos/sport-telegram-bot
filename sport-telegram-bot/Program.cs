@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using sport_telegram_bot.Application;
 using sport_telegram_bot.Persistence;
 using Telegram.Bot;
 
@@ -21,7 +23,7 @@ namespace sport_telegram_bot
                 try
                 {
                     var context = serviceProvider.GetService<BotDbContext>();
-                    DbInitializer.Initialize(context);
+                    context.Database.Migrate();
                 }
                 catch (Exception e)
                 {
@@ -37,6 +39,7 @@ namespace sport_telegram_bot
             Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) =>
                 {
+                    services.AddApplication();
                     services.AddPersistence(hostContext.Configuration);
                     services.AddSingleton(new TelegramBotClient("2033376592:AAGRSZZP_b-wJaE3HV0UY6bexnrnNW66Euo"));
                     services.AddHostedService<Bot>();

@@ -4,9 +4,11 @@ using System.Globalization;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using sport_telegram_bot.Application.Features.Users.Commands;
 using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Exceptions;
@@ -22,12 +24,14 @@ namespace sport_telegram_bot
         private readonly ILogger<Bot> _logger;
         private readonly TelegramBotClient _client;
         private readonly IConfiguration _configuration;
+        private IMediator _mediator;
 
-        public Bot(ILogger<Bot> logger, TelegramBotClient client, IConfiguration configuration)
+        public Bot(ILogger<Bot> logger, TelegramBotClient client, IConfiguration configuration, IMediator mediator)
         {
             _logger = logger;
             _client = client;
             _configuration = configuration;
+            _mediator = mediator;
         }
 
         public Task StartAsync(CancellationToken cancellationToken)
@@ -49,6 +53,13 @@ namespace sport_telegram_bot
                     return;
                 switch (update.Message.Text)
                 {
+                    case "/start":
+                        await _mediator.Send(new CreateUserRequest(update.Message.From.Id, update.Message.From.Username),
+                            cancellationToken);
+                        await botClient.SendTextMessageAsync(update.Message.Chat,
+                            "Добро пожаловать!",
+                            cancellationToken: cancellationToken);
+                        break;
                     case "/add_train":
                         await botClient.SendTextMessageAsync(update.Message.Chat,
                             "Выберите день тренировки", 
