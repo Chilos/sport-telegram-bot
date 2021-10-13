@@ -47,71 +47,79 @@ namespace sport_telegram_bot
         private async Task HandleUpdateAsync(ITelegramBotClient botClient,
             Update update, CancellationToken cancellationToken)
         {
-            if (update.Type == UpdateType.Message)
+            try
             {
-                if (update.Message is null)
-                    return;
-                switch (update.Message.Text)
+                if (update.Type == UpdateType.Message)
                 {
-                    case "/start":
-                        await _mediator.Send(new CreateUserRequest(update.Message.From.Id, update.Message.From.Username),
-                            cancellationToken);
-                        await botClient.SendTextMessageAsync(update.Message.Chat,
-                            "Добро пожаловать!",
-                            cancellationToken: cancellationToken);
-                        break;
-                    case "/add_train":
-                        await botClient.SendTextMessageAsync(update.Message.Chat,
-                            "Выберите день тренировки", 
-                            replyMarkup: DateChooseMenu(),  
-                            cancellationToken: cancellationToken);
-                        break;
-                    case "/database":
-                        await botClient.SendTextMessageAsync(update.Message.Chat, 
-                            $"База данных: {_configuration["DATABASE_URL"]}", 
-                            cancellationToken: cancellationToken);
-                        break;
-                    case "/photo":
-                        await botClient.SendPhotoAsync(update.Message.Chat, 
-                            $"База данных: {_configuration["DATABASE_URL"]}", 
-                            cancellationToken: cancellationToken);
-                        break;
-                    default: 
-                        await botClient.SendTextMessageAsync(update.Message.Chat, 
-                            "Всякое разное описание",
-                            cancellationToken: cancellationToken);
-                        break;
+                    if (update.Message is null)
+                        return;
+                    switch (update.Message.Text)
+                    {
+                        case "/start":
+                            await _mediator.Send(new CreateUserRequest(update.Message.From.Id, update.Message.From.Username),
+                                cancellationToken);
+                            await botClient.SendTextMessageAsync(update.Message.Chat,
+                                "Добро пожаловать!",
+                                cancellationToken: cancellationToken);
+                            break;
+                        case "/add_train":
+                            await botClient.SendTextMessageAsync(update.Message.Chat,
+                                "Выберите день тренировки", 
+                                replyMarkup: DateChooseMenu(),  
+                                cancellationToken: cancellationToken);
+                            break;
+                        case "/database":
+                            await botClient.SendTextMessageAsync(update.Message.Chat, 
+                                $"База данных: {_configuration["DATABASE_URL"]}", 
+                                cancellationToken: cancellationToken);
+                            break;
+                        case "/photo":
+                            await botClient.SendPhotoAsync(update.Message.Chat, 
+                                $"База данных: {_configuration["DATABASE_URL"]}", 
+                                cancellationToken: cancellationToken);
+                            break;
+                        default: 
+                            await botClient.SendTextMessageAsync(update.Message.Chat, 
+                                "Всякое разное описание",
+                                cancellationToken: cancellationToken);
+                            break;
+                    }
+                }
+
+                if (update.Type == UpdateType.CallbackQuery)
+                {
+                    if (update.CallbackQuery is null)
+                        return;
+                    var res = update.CallbackQuery.Data!.Split("_");
+                    switch (res![0])
+                    {
+                        case "trainDate":
+                            var date = DateTime.Parse(res[1]);
+                            await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id,
+                                update.CallbackQuery.Message.MessageId, 
+                                $"Дата тренировки выбрана: {date:dd.MM}", 
+                                cancellationToken: cancellationToken);
+                            await botClient.SendTextMessageAsync(update.CallbackQuery.Message!.Chat.Id, 
+                                "Выберите тип тренировки", 
+                                replyMarkup: TrainChooseMenu(date), 
+                                cancellationToken: cancellationToken);
+                            break;
+                    
+                        case "trainType":
+                            var typeId = int.Parse(res[1]);
+                            var trainDate = DateTime.Parse(res[2]);
+                            await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id, 
+                                update.CallbackQuery.Message.MessageId, 
+                                $"На {trainDate:dd.MM}, выбрана тренировка типа: {typeId}", 
+                                cancellationToken: cancellationToken);
+                            break;
+                    }
                 }
             }
-
-            if (update.Type == UpdateType.CallbackQuery)
+            catch (Exception e)
             {
-                if (update.CallbackQuery is null)
-                    return;
-                var res = update.CallbackQuery.Data!.Split("_");
-                switch (res![0])
-                {
-                    case "trainDate":
-                        var date = DateTime.Parse(res[1]);
-                        await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id,
-                            update.CallbackQuery.Message.MessageId, 
-                            $"Дата тренировки выбрана: {date:dd.MM}", 
-                            cancellationToken: cancellationToken);
-                        await botClient.SendTextMessageAsync(update.CallbackQuery.Message!.Chat.Id, 
-                            "Выберите тип тренировки", 
-                            replyMarkup: TrainChooseMenu(date), 
-                            cancellationToken: cancellationToken);
-                        break;
-                    
-                    case "trainType":
-                        var typeId = int.Parse(res[1]);
-                        var trainDate = DateTime.Parse(res[2]);
-                        await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id, 
-                            update.CallbackQuery.Message.MessageId, 
-                            $"На {trainDate:dd.MM}, выбрана тренировка типа: {typeId}", 
-                            cancellationToken: cancellationToken);
-                        break;
-                }
+                _logger.LogError("message error: {e}",e);
+                throw;
             }
         }
         

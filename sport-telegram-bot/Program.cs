@@ -1,7 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,7 +19,7 @@ namespace sport_telegram_bot
                 var serviceProvider = scope.ServiceProvider;
                 try
                 {
-                    var context = serviceProvider.GetService<BotDbContext>();
+                    var context = serviceProvider.GetService<BotDbContext>()!;
                     context.Database.Migrate();
                 }
                 catch (Exception e)

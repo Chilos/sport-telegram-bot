@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using sport_telegram_bot.Application.Abstract;
 
 namespace sport_telegram_bot.Persistence
@@ -13,8 +14,8 @@ namespace sport_telegram_bot.Persistence
             services.AddDbContext<BotDbContext>(options =>
             {
                 options.UseNpgsql(PostgresConnectionStringFactory.GetConnectionStringFromUrl(connectionString));
-            });
-            services.AddScoped<IBotDbContext>(provider => provider.GetService<BotDbContext>());
+            }, ServiceLifetime.Singleton);
+            services.AddSingleton<IBotDbContext>(provider => provider.GetService<BotDbContext>());
             return services;
         }
     }

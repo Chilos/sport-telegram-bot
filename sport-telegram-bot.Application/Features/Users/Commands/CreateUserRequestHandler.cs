@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using sport_telegram_bot.Application.Abstract;
 using sport_telegram_bot.Domain;
 
@@ -17,6 +18,12 @@ namespace sport_telegram_bot.Application.Features.Users.Commands
 
         public async Task<Unit> Handle(CreateUserRequest request, CancellationToken cancellationToken)
         {
+            var fundedUser = await _botDbContext.Users.FirstOrDefaultAsync(u => u.TelegramId == request.TelegramId,
+                cancellationToken: cancellationToken);
+            if (fundedUser is not null)
+            {
+                return Unit.Value;
+            }
             var user = new User
             {
                 Id = null,
