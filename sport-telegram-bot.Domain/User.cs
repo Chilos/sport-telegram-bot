@@ -1,6 +1,6 @@
 namespace sport_telegram_bot.Domain
 {
-    public record User
+    public sealed class User
     {
         public int? Id { get; set; }
         public long TelegramId { get; set; }

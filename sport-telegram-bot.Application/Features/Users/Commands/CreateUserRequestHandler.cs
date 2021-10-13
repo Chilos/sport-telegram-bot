@@ -7,7 +7,7 @@ using sport_telegram_bot.Domain;
 
 namespace sport_telegram_bot.Application.Features.Users.Commands
 {
-    public class CreateUserRequestHandler : IRequestHandler<CreateUserRequest>
+    public sealed class CreateUserRequestHandler : IRequestHandler<CreateUserRequest>
     {
         private readonly IBotDbContext _botDbContext;
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,6 +9,8 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using sport_telegram_bot.Application.Features.Exercises.Queries.GetExercises;
+using sport_telegram_bot.Application.Features.Exercises.Queries.GetExerciseTypes;
 using sport_telegram_bot.Application.Features.Users.Commands;
 using Telegram.Bot;
 using Telegram.Bot.Args;
@@ -24,7 +27,7 @@ namespace sport_telegram_bot
         private readonly ILogger<Bot> _logger;
         private readonly TelegramBotClient _client;
         private readonly IConfiguration _configuration;
-        private IMediator _mediator;
+        private readonly IMediator _mediator;
 
         public Bot(ILogger<Bot> logger, TelegramBotClient client, IConfiguration configuration, IMediator mediator)
         {
@@ -68,16 +71,6 @@ namespace sport_telegram_bot
                                 replyMarkup: DateChooseMenu(),  
                                 cancellationToken: cancellationToken);
                             break;
-                        case "/database":
-                            await botClient.SendTextMessageAsync(update.Message.Chat, 
-                                $"База данных: {_configuration["DATABASE_URL"]}", 
-                                cancellationToken: cancellationToken);
-                            break;
-                        case "/photo":
-                            await botClient.SendPhotoAsync(update.Message.Chat, 
-                                $"База данных: {_configuration["DATABASE_URL"]}", 
-                                cancellationToken: cancellationToken);
-                            break;
                         default: 
                             await botClient.SendTextMessageAsync(update.Message.Chat, 
                                 "Всякое разное описание",
@@ -101,16 +94,25 @@ namespace sport_telegram_bot
                                 cancellationToken: cancellationToken);
                             await botClient.SendTextMessageAsync(update.CallbackQuery.Message!.Chat.Id, 
                                 "Выберите тип тренировки", 
-                                replyMarkup: TrainChooseMenu(date), 
+                                replyMarkup: await TrainTypeChooseMenuAsync(date, cancellationToken), 
                                 cancellationToken: cancellationToken);
                             break;
                     
                         case "trainType":
-                            var typeId = int.Parse(res[1]);
+                            var trainType = res[1];
                             var trainDate = DateTime.Parse(res[2]);
                             await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id, 
                                 update.CallbackQuery.Message.MessageId, 
-                                $"На {trainDate:dd.MM}, выбрана тренировка типа: {typeId}", 
+                                $"На {trainDate:dd.MM}, выбрана тренировка типа: {trainType}", 
+                                replyMarkup: await ExerciseChooseMenuAsync(trainType, cancellationToken),
+                                cancellationToken: cancellationToken);
+                            break;
+                        case "addExercise":
+                            var exercise = long.Parse(res[1]);
+                            await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id, 
+                                update.CallbackQuery.Message.MessageId, 
+                                $"{update.CallbackQuery.Message!.Text} {Environment.NewLine}" +
+                                $"тренеровка {exercise}",
                                 cancellationToken: cancellationToken);
                             break;
                     }
@@ -136,14 +138,24 @@ namespace sport_telegram_bot
             
             return new InlineKeyboardMarkup(buttons);
         }
-        private InlineKeyboardMarkup TrainChooseMenu(DateTime date)
+        private async Task<InlineKeyboardMarkup> TrainTypeChooseMenuAsync(DateTime date, CancellationToken cancellationToken)
         {
-            var buttons = new List<InlineKeyboardButton>
+            var trainTypes = await _mediator.Send(new GetExerciseTypesRequest(), cancellationToken);
+            var buttons = trainTypes.Select(type => new List<InlineKeyboardButton>
             {
-                InlineKeyboardButton.WithCallbackData("Грудь и трицепс", $"trainType_1_{date}"),
-                InlineKeyboardButton.WithCallbackData("Спина и бицепс", $"trainType_2_{date}"),
-                InlineKeyboardButton.WithCallbackData("Плечи и ноги", $"trainType_3_{date}")
-            };
+                InlineKeyboardButton.WithCallbackData(type, $"trainType_{type}_{date}")
+            }).ToList();
+
+            return new InlineKeyboardMarkup(buttons);
+        }
+        
+        private async Task<InlineKeyboardMarkup> ExerciseChooseMenuAsync(string type, CancellationToken cancellationToken)
+        {
+            var exercises = await _mediator.Send(new GetExercisesRequest(type), cancellationToken);
+            var buttons = exercises.Select(e => new List<InlineKeyboardButton>
+            {
+                InlineKeyboardButton.WithCallbackData(e.Description, $"addExercise_{e.Id}")
+            }).ToList();
 
             return new InlineKeyboardMarkup(buttons);
         }

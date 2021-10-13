@@ -1,6 +1,6 @@
 namespace sport_telegram_bot.Domain
 {
-    public class Exercise
+    public sealed class Exercise
     {
         public long Id { get; set; }
         public string Type { get; set; }
