@@ -1,19 +1,23 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using sport_telegram_bot.Application.Features.Exercises.Queries.GetExercises;
+using sport_telegram_bot.Application.Features.Exercises.Queries.GetExercisesById;
+using sport_telegram_bot.Application.Features.Exercises.Queries.GetExercisesByType;
 using sport_telegram_bot.Application.Features.Exercises.Queries.GetExerciseTypes;
-using sport_telegram_bot.Application.Features.Users.Commands;
+using sport_telegram_bot.Application.Features.TrainRecord.Commands.AddExerciseToTrainRecord;
+using sport_telegram_bot.Application.Features.TrainRecord.Commands.CreateTrainRecord;
+using sport_telegram_bot.Application.Features.TrainRecord.Commands.RemoveTrainRecord;
+using sport_telegram_bot.Application.Features.TrainRecord.Queries.GetActiveTrainsByUser;
+using sport_telegram_bot.Application.Features.TrainRecord.Queries.GetTrainRecordByDate;
+using sport_telegram_bot.Application.Features.Users.Commands.CreateUser;
+using sport_telegram_bot.Application.Features.Users.Queries.GetUsers;
 using Telegram.Bot;
-using Telegram.Bot.Args;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
@@ -59,7 +63,7 @@ namespace sport_telegram_bot
                     switch (update.Message.Text)
                     {
                         case "/start":
-                            await _mediator.Send(new CreateUserRequest(update.Message.From.Id, update.Message.From.Username),
+                            await _mediator.Send(new CreateUserRequest(update.Message!.From!.Id, update.Message.From.Username),
                                 cancellationToken);
                             await botClient.SendTextMessageAsync(update.Message.Chat,
                                 "Добро пожаловать!",
@@ -69,6 +73,14 @@ namespace sport_telegram_bot
                             await botClient.SendTextMessageAsync(update.Message.Chat,
                                 "Выберите день тренировки", 
                                 replyMarkup: DateChooseMenu(),  
+                                cancellationToken: cancellationToken);
+                            break;
+                        case "/remove_train":
+                            var user = await _mediator.Send(new GetUsersRequest(update.Message.From!.Id),
+                                cancellationToken);
+                            await botClient.SendTextMessageAsync(update.Message.Chat,
+                                "Выберите день тренировки для удаления", 
+                                replyMarkup: await ActiveTrainMenu(user.Id!.Value, cancellationToken),  
                                 cancellationToken: cancellationToken);
                             break;
                         default: 
@@ -86,33 +98,57 @@ namespace sport_telegram_bot
                     var res = update.CallbackQuery.Data!.Split("_");
                     switch (res![0])
                     {
+                        //TODO: Отрефакторить этот ужас
                         case "trainDate":
                             var date = DateTime.Parse(res[1]);
+                            var train = await _mediator
+                                .Send(new GetTrainRecordByDateRequest(date), cancellationToken);
+                            if (train is not null)
+                            {
+                                await botClient.SendTextMessageAsync(update.Message!.Chat,
+                                    "На данную дату тренировка уже запланирована",
+                                    cancellationToken: cancellationToken);
+                            }
+                            var user = await _mediator
+                                .Send(new GetUsersRequest(update.CallbackQuery.From.Id), cancellationToken);
+                            await _mediator.Send(new CreateTrainRecordRequest(user, date), cancellationToken);
+                            train = await _mediator
+                                .Send(new GetTrainRecordByDateRequest(date), cancellationToken);
                             await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id,
                                 update.CallbackQuery.Message.MessageId, 
-                                $"Дата тренировки выбрана: {date:dd.MM}", 
-                                cancellationToken: cancellationToken);
-                            await botClient.SendTextMessageAsync(update.CallbackQuery.Message!.Chat.Id, 
-                                "Выберите тип тренировки", 
-                                replyMarkup: await TrainTypeChooseMenuAsync(date, cancellationToken), 
+                                $"Дата тренировки выбрана: {date:dd.MM} {Environment.NewLine}" +
+                                $"Добавьте упражнения:", 
+                                replyMarkup: await TrainTypeChooseMenuAsync(train.Id, cancellationToken), 
                                 cancellationToken: cancellationToken);
                             break;
                     
                         case "trainType":
                             var trainType = res[1];
-                            var trainDate = DateTime.Parse(res[2]);
+                            var trainId = long.Parse(res[2]);
                             await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id, 
                                 update.CallbackQuery.Message.MessageId, 
-                                $"На {trainDate:dd.MM}, выбрана тренировка типа: {trainType}", 
-                                replyMarkup: await ExerciseChooseMenuAsync(trainType, cancellationToken),
+                                update.CallbackQuery.Message!.Text!, 
+                                replyMarkup: await ExerciseChooseMenuAsync(trainType, trainId, cancellationToken),
                                 cancellationToken: cancellationToken);
                             break;
                         case "addExercise":
-                            var exercise = long.Parse(res[1]);
+                            var exerciseId = int.Parse(res[1]);
+                            var id = int.Parse(res[2]);
+                            var exercise = await _mediator.Send(new GetExercisesByIdRequest(exerciseId), cancellationToken);
+                            await _mediator.Send(new AddExerciseToTrainRecordRequest(exerciseId, id), cancellationToken);
                             await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id, 
                                 update.CallbackQuery.Message.MessageId, 
                                 $"{update.CallbackQuery.Message!.Text} {Environment.NewLine}" +
-                                $"тренеровка {exercise}",
+                                $"{exercise.Description}",
+                                replyMarkup: await TrainTypeChooseMenuAsync(id, cancellationToken), 
+                                cancellationToken: cancellationToken);
+                            break;
+                        case "removeTrain":
+                            var removeTrainId = long.Parse(res[1]);
+                            await _mediator.Send(new RemoveTrainRecordRequest(removeTrainId), cancellationToken);
+                            await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id, 
+                                update.CallbackQuery.Message.MessageId, 
+                                "Тренировка удалена!",
                                 cancellationToken: cancellationToken);
                             break;
                     }
@@ -138,23 +174,37 @@ namespace sport_telegram_bot
             
             return new InlineKeyboardMarkup(buttons);
         }
-        private async Task<InlineKeyboardMarkup> TrainTypeChooseMenuAsync(DateTime date, CancellationToken cancellationToken)
+
+        private async Task<InlineKeyboardMarkup> ActiveTrainMenu(int userId, CancellationToken cancellationToken)
+        {
+            var trains = await _mediator
+                .Send(new GetActiveTrainsByUserRequest(userId), cancellationToken);
+            var buttons = new List<InlineKeyboardButton>();
+            foreach (var train in trains)
+            {
+                var data = $"removeTrain_{train.Id}";
+                buttons.Add(InlineKeyboardButton.WithCallbackData($"{train.DateAt:dd.MM}", data));
+            }
+            
+            return new InlineKeyboardMarkup(buttons);
+        }
+        private async Task<InlineKeyboardMarkup> TrainTypeChooseMenuAsync(long trainId, CancellationToken cancellationToken)
         {
             var trainTypes = await _mediator.Send(new GetExerciseTypesRequest(), cancellationToken);
             var buttons = trainTypes.Select(type => new List<InlineKeyboardButton>
             {
-                InlineKeyboardButton.WithCallbackData(type, $"trainType_{type}_{date}")
+                InlineKeyboardButton.WithCallbackData(type, $"trainType_{type}_{trainId}")
             }).ToList();
 
             return new InlineKeyboardMarkup(buttons);
         }
         
-        private async Task<InlineKeyboardMarkup> ExerciseChooseMenuAsync(string type, CancellationToken cancellationToken)
+        private async Task<InlineKeyboardMarkup> ExerciseChooseMenuAsync(string type, long trainId, CancellationToken cancellationToken)
         {
-            var exercises = await _mediator.Send(new GetExercisesRequest(type), cancellationToken);
+            var exercises = await _mediator.Send(new GetExercisesByTypeRequest(type), cancellationToken);
             var buttons = exercises.Select(e => new List<InlineKeyboardButton>
             {
-                InlineKeyboardButton.WithCallbackData(e.Description, $"addExercise_{e.Id}")
+                InlineKeyboardButton.WithCallbackData(e.Description, $"addExercise_{e.Id}_{trainId}")
             }).ToList();
 
             return new InlineKeyboardMarkup(buttons);

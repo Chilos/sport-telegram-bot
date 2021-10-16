@@ -1,6 +1,6 @@
 using MediatR;
 
-namespace sport_telegram_bot.Application.Features.Users.Commands
+namespace sport_telegram_bot.Application.Features.Users.Commands.CreateUser
 {
     public sealed class CreateUserRequest : IRequest
     {

@@ -4,5 +4,5 @@ using sport_telegram_bot.Domain;
 
 namespace sport_telegram_bot.Application.Features.Exercises.Queries.GetExercises
 {
-    public sealed record GetExercisesRequest(string Type): IRequest<IReadOnlyList<Exercise>>;
+    public sealed record GetExercisesRequest: IRequest<IReadOnlyList<Exercise>>;
 }

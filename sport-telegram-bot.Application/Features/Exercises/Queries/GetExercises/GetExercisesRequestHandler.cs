@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -20,9 +18,7 @@ namespace sport_telegram_bot.Application.Features.Exercises.Queries.GetExercises
         }
         public async Task<IReadOnlyList<Exercise>> Handle(GetExercisesRequest request, CancellationToken cancellationToken)
         {
-            if (request.Type is null)
-                return await _botDbContext.Exercises.ToListAsync(cancellationToken);
-            return await _botDbContext.Exercises.Where(e => e.Type == request.Type).ToListAsync(cancellationToken);
+            return await _botDbContext.Exercises.ToListAsync(cancellationToken);
         }
     }
 }

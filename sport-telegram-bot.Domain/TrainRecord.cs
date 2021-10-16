@@ -8,6 +8,6 @@ namespace sport_telegram_bot.Domain
         public int Id { get; set; }
         public User User { get; set; }
         public DateTime DateAt { get; set; }
-        public IReadOnlyList<ExerciseRecord> Exercises { get; set; }
+        public List<ExerciseRecord> Exercises { get; set; }
     }
 }

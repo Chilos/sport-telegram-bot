@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using sport_telegram_bot.Application.Abstract;
 using sport_telegram_bot.Domain;
 
-namespace sport_telegram_bot.Application.Features.Users.Commands
+namespace sport_telegram_bot.Application.Features.Users.Commands.CreateUser
 {
     public sealed class CreateUserRequestHandler : IRequestHandler<CreateUserRequest>
     {
@@ -18,8 +18,8 @@ namespace sport_telegram_bot.Application.Features.Users.Commands
 
         public async Task<Unit> Handle(CreateUserRequest request, CancellationToken cancellationToken)
         {
-            var fundedUser = await _botDbContext.Users.FirstOrDefaultAsync(u => u.TelegramId == request.TelegramId,
-                cancellationToken: cancellationToken);
+            var fundedUser = await _botDbContext.Users
+                .FirstOrDefaultAsync(u => u.TelegramId == request.TelegramId, cancellationToken);
             if (fundedUser is not null)
             {
                 return Unit.Value;
