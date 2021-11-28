@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using sport_telegram_bot.Application.Features.Exercises.Queries.GetExercisesById;
@@ -15,13 +14,16 @@ using sport_telegram_bot.Application.Features.TrainRecord.Commands.CreateTrainRe
 using sport_telegram_bot.Application.Features.TrainRecord.Commands.RemoveTrainRecord;
 using sport_telegram_bot.Application.Features.TrainRecord.Queries.GetActiveTrainsByUser;
 using sport_telegram_bot.Application.Features.TrainRecord.Queries.GetTrainRecordByDate;
+using sport_telegram_bot.Application.Features.TrainRecord.Queries.GetTrainRecordById;
 using sport_telegram_bot.Application.Features.Users.Commands.CreateUser;
 using sport_telegram_bot.Application.Features.Users.Queries.GetUsers;
+using sport_telegram_bot.Domain;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.InputFiles;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace sport_telegram_bot
@@ -30,18 +32,17 @@ namespace sport_telegram_bot
     {
         private readonly ILogger<Bot> _logger;
         private readonly TelegramBotClient _client;
-        private readonly IConfiguration _configuration;
         private readonly IMediator _mediator;
+        private Dictionary<long, int> _questions = new Dictionary<long, int>();
 
-        public Bot(ILogger<Bot> logger, TelegramBotClient client, IConfiguration configuration, IMediator mediator)
+        public Bot(ILogger<Bot> logger, TelegramBotClient client, IMediator mediator)
         {
             _logger = logger;
             _client = client;
-            _configuration = configuration;
             _mediator = mediator;
         }
 
-        public Task StartAsync(CancellationToken cancellationToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
             var receiverOptions = new ReceiverOptions
             {
@@ -49,7 +50,24 @@ namespace sport_telegram_bot
             };
             _client.StartReceiving(HandleUpdateAsync,HandleErrorAsync, receiverOptions, cancellationToken);
             _logger.LogInformation("Start Bot");
-            return Task.CompletedTask;
+            await _client.SetMyCommandsAsync(new[]
+            {
+                new BotCommand
+                {
+                    Command = "add_train",
+                    Description = "Добавить тренировку"
+                },
+                new BotCommand
+                {
+                    Command = "remove_train",
+                    Description = "Удалить тренировку"
+                },
+                new BotCommand
+                {
+                    Command = "begin_train",
+                    Description = "Начать тренировку"
+                }
+            },BotCommandScope.AllPrivateChats(), cancellationToken: cancellationToken);
         }
         private async Task HandleUpdateAsync(ITelegramBotClient botClient,
             Update update, CancellationToken cancellationToken)
@@ -83,9 +101,33 @@ namespace sport_telegram_bot
                                 replyMarkup: await ActiveTrainMenu(user.Id!.Value, cancellationToken),  
                                 cancellationToken: cancellationToken);
                             break;
-                        default: 
-                            await botClient.SendTextMessageAsync(update.Message.Chat, 
-                                "Всякое разное описание",
+                        case "/begin_train":
+                            var beginTrainUser = await _mediator.Send(new GetUsersRequest(update.Message.From!.Id),
+                                cancellationToken);
+                            var beginTrain = await _mediator
+                                .Send(new GetTrainRecordByDateRequest(DateTime.Now.Date, beginTrainUser.Id!.Value),
+                                cancellationToken);
+                            if (beginTrain == null)
+                            {
+                                await botClient.SendTextMessageAsync(update.Message.Chat,
+                                    "На сегодня нет запланированных тренировок",
+                                    cancellationToken: cancellationToken);
+                            }
+                            await botClient.SendTextMessageAsync(update.Message.Chat,
+                                "Выберите упражнение", 
+                                replyMarkup: BeginExercisesChooseMenu(beginTrain),
+                                cancellationToken: cancellationToken);
+                            break;
+                        default:
+                            var telegramId = update.Message.From!.Id;
+                            if (!_questions.ContainsKey(telegramId))
+                            {
+                                break;
+                            }
+                            var recordId = _questions[telegramId];
+                            
+                            await botClient.SendTextMessageAsync(update.Message.Chat,
+                                "Выберите упражнение",
                                 cancellationToken: cancellationToken);
                             break;
                     }
@@ -101,19 +143,21 @@ namespace sport_telegram_bot
                         //TODO: Отрефакторить этот ужас
                         case "trainDate":
                             var date = DateTime.Parse(res[1]);
-                            var train = await _mediator
-                                .Send(new GetTrainRecordByDateRequest(date), cancellationToken);
-                            if (train is not null)
-                            {
-                                await botClient.SendTextMessageAsync(update.Message!.Chat,
-                                    "На данную дату тренировка уже запланирована",
-                                    cancellationToken: cancellationToken);
-                            }
                             var user = await _mediator
                                 .Send(new GetUsersRequest(update.CallbackQuery.From.Id), cancellationToken);
+                            var train = await _mediator
+                                .Send(new GetTrainRecordByDateRequest(date, user.Id!.Value), cancellationToken);
+                            if (train is not null)
+                            {
+                                await botClient.SendTextMessageAsync(update.CallbackQuery.Message!.Chat.Id,
+                                    "На данную дату тренировка уже запланирована",
+                                    cancellationToken: cancellationToken);
+                                break;
+                            }
+                            
                             await _mediator.Send(new CreateTrainRecordRequest(user, date), cancellationToken);
                             train = await _mediator
-                                .Send(new GetTrainRecordByDateRequest(date), cancellationToken);
+                                .Send(new GetTrainRecordByDateRequest(date, user.Id!.Value), cancellationToken);
                             await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id,
                                 update.CallbackQuery.Message.MessageId, 
                                 $"Дата тренировки выбрана: {date:dd.MM} {Environment.NewLine}" +
@@ -143,6 +187,13 @@ namespace sport_telegram_bot
                                 replyMarkup: await TrainTypeChooseMenuAsync(id, cancellationToken), 
                                 cancellationToken: cancellationToken);
                             break;
+                        case "confirmTrain":
+                            await botClient.EditMessageTextAsync(update.CallbackQuery.Message!.Chat.Id, 
+                                update.CallbackQuery.Message.MessageId, 
+                                $"{update.CallbackQuery.Message!.Text} {Environment.NewLine}" +
+                                $"Тренировка запланирована!",
+                                cancellationToken: cancellationToken);
+                            break;
                         case "removeTrain":
                             var removeTrainId = long.Parse(res[1]);
                             await _mediator.Send(new RemoveTrainRecordRequest(removeTrainId), cancellationToken);
@@ -150,6 +201,25 @@ namespace sport_telegram_bot
                                 update.CallbackQuery.Message.MessageId, 
                                 "Тренировка удалена!",
                                 cancellationToken: cancellationToken);
+                            break;
+                        case "beginExercise":
+                            var beginExerciseId = int.Parse(res[1]);
+                            var beginExerciseTrainId = int.Parse(res[2]);
+                            var beginTrain = await _mediator
+                                .Send(new GetTrainRecordByIdRequest(beginExerciseTrainId), cancellationToken);
+                            var beginExercise = beginTrain
+                                .Exercises
+                                .FirstOrDefault(e => e.Id == beginExerciseId);
+                            await botClient.DeleteMessageAsync(update.CallbackQuery.Message!.Chat.Id,
+                                update.CallbackQuery.Message.MessageId, cancellationToken);
+                            await botClient.SendPhotoAsync(update.CallbackQuery.Message!.Chat.Id,
+                                new InputOnlineFile(beginExercise!.Exercise.ImageUrl),
+                                caption: $"{beginExercise!.Exercise.Description} {Environment.NewLine}" +
+                                         $"Введите вес и число повторений по примеру:{Environment.NewLine}" +
+                                         $"число повторений-вес",
+                                replyMarkup: BeginExercisesChooseMenu(beginTrain),
+                                cancellationToken: cancellationToken);
+                            _questions[update.CallbackQuery.From.Id] = beginExerciseId;
                             break;
                     }
                 }
@@ -159,6 +229,19 @@ namespace sport_telegram_bot
                 _logger.LogError("message error: {e}",e);
                 throw;
             }
+        }
+        
+        private InlineKeyboardMarkup BeginExercisesChooseMenu(TrainRecord train)
+        {
+            
+            var buttons = train.Exercises
+                .Where(e => e.Weight == null && e.Repetitions == null)
+                .Select(e => new List<InlineKeyboardButton>
+                {
+                    InlineKeyboardButton.WithCallbackData(e.Exercise.Description, $"beginExercise_{e.Id}_{train.Id}")
+                }).ToList();
+
+            return new InlineKeyboardMarkup(buttons);
         }
         
         private InlineKeyboardMarkup DateChooseMenu()
@@ -195,6 +278,10 @@ namespace sport_telegram_bot
             {
                 InlineKeyboardButton.WithCallbackData(type, $"trainType_{type}_{trainId}")
             }).ToList();
+            buttons.Add(new List<InlineKeyboardButton>
+            {
+                InlineKeyboardButton.WithCallbackData("Готово", $"confirmTrain_{trainId}")
+            });
 
             return new InlineKeyboardMarkup(buttons);
         }

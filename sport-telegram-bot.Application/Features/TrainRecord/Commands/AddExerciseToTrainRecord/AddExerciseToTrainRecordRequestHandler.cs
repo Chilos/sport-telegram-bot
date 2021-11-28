@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using sport_telegram_bot.Application.Abstract;
-using sport_telegram_bot.Domain;
 
 namespace sport_telegram_bot.Application.Features.TrainRecord.Commands.AddExerciseToTrainRecord
 {
@@ -24,11 +23,12 @@ namespace sport_telegram_bot.Application.Features.TrainRecord.Commands.AddExerci
             var trainRecord = await _botDbContext.TrainRecord
                 .FirstOrDefaultAsync(t => t.Id == trainId, cancellationToken);
             //TODO: Надо запилить проверку на null
-            _botDbContext.ExerciseRecord.Add(new ExerciseRecord
+            _botDbContext.ExerciseRecord.Add(new Domain.ExerciseRecord
             {
                 Exercise = exercise,
                 TrainRecord = trainRecord,
-                Repetitions = 15
+                Repetitions = null,
+                Weight = null
             });
 
             await _botDbContext.SaveChangesAsync(cancellationToken);

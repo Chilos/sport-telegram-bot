@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -19,8 +20,14 @@ namespace sport_telegram_bot.Application.Features.TrainRecord.Commands.RemoveTra
         public async Task<Unit> Handle(RemoveTrainRecordRequest request, CancellationToken cancellationToken)
         {
             var train = await _botDbContext.TrainRecord
-                .FirstOrDefaultAsync(t => t.Id == request.TrainId, cancellationToken);
+                .Include(p=> p.User)
+                .Include(p=> p.Exercises)
+                .SingleOrDefaultAsync(t => t.Id == request.TrainId, cancellationToken);
             _botDbContext.TrainRecord.Remove(train);
+            var exercises = _botDbContext.ExerciseRecord
+                .Include(e => e.TrainRecord)
+                .Where(e => e.TrainRecord == null || e.TrainRecord.Id == train.Id);
+            _botDbContext.ExerciseRecord.RemoveRange(exercises);
             await _botDbContext.SaveChangesAsync(cancellationToken);
             
             return Unit.Value;

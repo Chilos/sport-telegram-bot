@@ -22,7 +22,10 @@ namespace sport_telegram_bot.Application.Features.TrainRecord.Queries.GetTrainRe
             CancellationToken cancellationToken)
         {
             return await _botDbContext.TrainRecord
-                .FirstOrDefaultAsync(t => t.DateAt == request.date, cancellationToken);
+                .Include(t => t.Exercises)
+                .ThenInclude(e => e.Exercise)
+                .Include(t => t.User)
+                .FirstOrDefaultAsync(t => t.DateAt == request.date && t.User.Id == request.UserId, cancellationToken);
         }
     }
 }
