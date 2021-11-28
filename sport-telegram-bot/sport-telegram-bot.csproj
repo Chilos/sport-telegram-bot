@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Worker">
 
     <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <UserSecretsId>dotnet-sport_telegram_bot-14EEFA8A-450B-4441-B055-9C8D4A3B08D2</UserSecretsId>
         <RootNamespace>sport_telegram_bot</RootNamespace>
     </PropertyGroup>
