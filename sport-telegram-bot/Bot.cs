@@ -34,7 +34,7 @@ namespace sport_telegram_bot
         private readonly ILogger<Bot> _logger;
         private readonly TelegramBotClient _client;
         private readonly IMediator _mediator;
-        private Dictionary<long, int> _questions = new Dictionary<long, int>();
+        private Dictionary<long, (int, int)> _questions = new Dictionary<long, (int, int)>();
 
         public Bot(ILogger<Bot> logger, TelegramBotClient client, IMediator mediator)
         {
@@ -115,9 +115,18 @@ namespace sport_telegram_bot
                                     cancellationToken: cancellationToken);
                                 break;
                             }
+
+                            var buttons = BeginExercisesChooseMenu(beginTrain);
+                            if (!buttons.InlineKeyboard.Any())
+                            {
+                                await botClient.SendTextMessageAsync(update.Message.Chat,
+                                    "Вы завершили тренирку на сегодня, поздравляем",
+                                    cancellationToken: cancellationToken);
+                                break;
+                            }
                             await botClient.SendTextMessageAsync(update.Message.Chat,
                                 "Выберите упражнение", 
-                                replyMarkup: BeginExercisesChooseMenu(beginTrain),
+                                replyMarkup: buttons,
                                 cancellationToken: cancellationToken);
                             break;
                         default:
@@ -126,17 +135,19 @@ namespace sport_telegram_bot
                             {
                                 break;
                             }
-                            var recordId = _questions[telegramId];
+                            var tuple = _questions[telegramId];
                             var res = update.Message.Text!.Split("-");
                             var request = new CompleteExerciseRecordRequest(
-                                    recordId,
+                                    tuple.Item1,
                                     int.Parse(res[0]), 
                                     int.Parse(res[1]));
                             await _mediator.Send(request, cancellationToken);
-                            _questions.Remove(telegramId);
+                            await botClient.DeleteMessageAsync(update.Message!.Chat.Id,
+                                tuple.Item2, cancellationToken);
                             await botClient.SendTextMessageAsync(update.Message.Chat,
                                 "Сохранено!",
                                 cancellationToken: cancellationToken);
+                            _questions.Remove(telegramId);
                             break;
                     }
                 }
@@ -220,14 +231,14 @@ namespace sport_telegram_bot
                                 .FirstOrDefault(e => e.Id == beginExerciseId);
                             await botClient.DeleteMessageAsync(update.CallbackQuery.Message!.Chat.Id,
                                 update.CallbackQuery.Message.MessageId, cancellationToken);
-                            await botClient.SendPhotoAsync(update.CallbackQuery.Message!.Chat.Id,
+                            var message = await botClient.SendPhotoAsync(update.CallbackQuery.Message!.Chat.Id,
                                 new InputOnlineFile(beginExercise!.Exercise.ImageUrl),
                                 caption: $"{beginExercise!.Exercise.Description} {Environment.NewLine}" +
                                          $"Введите вес и число повторений по примеру:{Environment.NewLine}" +
                                          $"число повторений-вес",
                                 replyMarkup: BeginExercisesChooseMenu(beginTrain),
                                 cancellationToken: cancellationToken);
-                            _questions[update.CallbackQuery.From.Id] = beginExerciseId;
+                            _questions[update.CallbackQuery.From.Id] = (beginExerciseId, message.MessageId);
                             break;
                     }
                 }
@@ -235,7 +246,6 @@ namespace sport_telegram_bot
             catch (Exception e)
             {
                 _logger.LogError("message error: {e}",e);
-                throw;
             }
         }
         
