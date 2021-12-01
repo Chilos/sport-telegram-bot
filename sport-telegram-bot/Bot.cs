@@ -130,9 +130,10 @@ namespace sport_telegram_bot
                             var res = update.Message.Text!.Split("-");
                             var request = new CompleteExerciseRecordRequest(
                                     recordId,
-                                    int.Parse(res[0]),
+                                    int.Parse(res[0]), 
                                     int.Parse(res[1]));
                             await _mediator.Send(request, cancellationToken);
+                            _questions.Remove(telegramId);
                             await botClient.SendTextMessageAsync(update.Message.Chat,
                                 "Сохранено!",
                                 cancellationToken: cancellationToken);
