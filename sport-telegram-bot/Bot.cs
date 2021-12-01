@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using MediatR;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using sport_telegram_bot.Application.Features.ExerciseRecord.Commands.CompleteExerciseRecord;
 using sport_telegram_bot.Application.Features.Exercises.Queries.GetExercisesById;
 using sport_telegram_bot.Application.Features.Exercises.Queries.GetExercisesByType;
 using sport_telegram_bot.Application.Features.Exercises.Queries.GetExerciseTypes;
@@ -112,6 +113,7 @@ namespace sport_telegram_bot
                                 await botClient.SendTextMessageAsync(update.Message.Chat,
                                     "На сегодня нет запланированных тренировок",
                                     cancellationToken: cancellationToken);
+                                break;
                             }
                             await botClient.SendTextMessageAsync(update.Message.Chat,
                                 "Выберите упражнение", 
@@ -125,9 +127,14 @@ namespace sport_telegram_bot
                                 break;
                             }
                             var recordId = _questions[telegramId];
-                            
+                            var res = update.Message.Text!.Split("-");
+                            var request = new CompleteExerciseRecordRequest(
+                                    recordId,
+                                    int.Parse(res[0]),
+                                    int.Parse(res[1]));
+                            await _mediator.Send(request, cancellationToken);
                             await botClient.SendTextMessageAsync(update.Message.Chat,
-                                "Выберите упражнение",
+                                "Сохранено!",
                                 cancellationToken: cancellationToken);
                             break;
                     }
