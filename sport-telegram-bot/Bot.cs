@@ -14,6 +14,7 @@ using sport_telegram_bot.Application.Features.TrainRecord.Commands.AddExerciseTo
 using sport_telegram_bot.Application.Features.TrainRecord.Commands.CreateTrainRecord;
 using sport_telegram_bot.Application.Features.TrainRecord.Commands.RemoveTrainRecord;
 using sport_telegram_bot.Application.Features.TrainRecord.Queries.GetActiveTrainsByUser;
+using sport_telegram_bot.Application.Features.TrainRecord.Queries.GetLastCompletedTrainByUser;
 using sport_telegram_bot.Application.Features.TrainRecord.Queries.GetTrainRecordByDate;
 using sport_telegram_bot.Application.Features.TrainRecord.Queries.GetTrainRecordById;
 using sport_telegram_bot.Application.Features.Users.Commands.CreateUser;
@@ -224,16 +225,26 @@ namespace sport_telegram_bot
                         case "beginExercise":
                             var beginExerciseId = int.Parse(res[1]);
                             var beginExerciseTrainId = int.Parse(res[2]);
+                            var beginExerciseUser = await _mediator
+                                .Send(new GetUsersRequest(update.CallbackQuery.From.Id), cancellationToken);
                             var beginTrain = await _mediator
                                 .Send(new GetTrainRecordByIdRequest(beginExerciseTrainId), cancellationToken);
+                            
                             var beginExercise = beginTrain
                                 .Exercises
                                 .FirstOrDefault(e => e.Id == beginExerciseId);
+                            var lastTrain = await _mediator.Send(
+                                new GetLastCompletedTrainByUserRequest(beginExerciseUser.Id.Value, beginExercise.Exercise.Id), cancellationToken);
                             await botClient.DeleteMessageAsync(update.CallbackQuery.Message!.Chat.Id,
                                 update.CallbackQuery.Message.MessageId, cancellationToken);
                             var message = await botClient.SendPhotoAsync(update.CallbackQuery.Message!.Chat.Id,
                                 new InputOnlineFile(beginExercise!.Exercise.ImageUrl),
                                 caption: $"{beginExercise!.Exercise.Description} {Environment.NewLine}" +
+                                         $" {Environment.NewLine}" +
+                                         $"Прошлый результат: {Environment.NewLine}" +
+                                         $"число повторений: {lastTrain?.Exercises.Find(e => e.Exercise.Id == beginExercise.Exercise.Id).Repetitions} {Environment.NewLine}" +
+                                         $"вес: {lastTrain?.Exercises.Find(e => e.Exercise.Id == beginExercise.Exercise.Id).Weight} {Environment.NewLine}" +
+                                         $" {Environment.NewLine}" +
                                          $"Введите вес и число повторений по примеру:{Environment.NewLine}" +
                                          $"число повторений-вес",
                                 replyMarkup: BeginExercisesChooseMenu(beginTrain),
