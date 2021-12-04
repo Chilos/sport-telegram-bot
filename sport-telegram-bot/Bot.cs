@@ -71,6 +71,7 @@ namespace sport_telegram_bot
                 }
             },BotCommandScope.AllPrivateChats(), cancellationToken: cancellationToken);
         }
+        
         private async Task HandleUpdateAsync(ITelegramBotClient botClient,
             Update update, CancellationToken cancellationToken)
         {
