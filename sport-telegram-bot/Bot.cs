@@ -277,10 +277,9 @@ namespace sport_telegram_bot
         private InlineKeyboardMarkup DateChooseMenu()
         {
             var buttons = new List<InlineKeyboardButton>();
-            var currentDate = DateTime.Now;
             for (var i = 0; i < 7; i++)
             {
-                currentDate = currentDate.AddDays(i);
+                var currentDate = DateTime.Now.AddDays(i);
                 var data = $"trainDate_{currentDate:d}";
                 buttons.Add(InlineKeyboardButton.WithCallbackData($"{currentDate:dd.MM}", data));
             }
