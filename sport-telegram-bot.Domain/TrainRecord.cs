@@ -7,7 +7,7 @@ namespace sport_telegram_bot.Domain
     {
         public int Id { get; set; }
         public User User { get; set; }
-        public DateTime DateAt { get; set; }
+        public DateOnly DateAt { get; set; }
         public List<ExerciseRecord> Exercises { get; set; }
     }
 }

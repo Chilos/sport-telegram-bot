@@ -23,7 +23,7 @@ namespace sport_telegram_bot.Application.Features.TrainRecord.Queries.GetActiveT
             CancellationToken cancellationToken)
         {
             return await _botDbContext.TrainRecord
-                .Where(t => t.User.Id == request.UserId && t.DateAt >= DateTime.Now.Date)
+                .Where(t => t.User.Id == request.UserId && t.DateAt >= DateOnly.FromDateTime(DateTime.Now))
                 .ToListAsync(cancellationToken);
         }
     }

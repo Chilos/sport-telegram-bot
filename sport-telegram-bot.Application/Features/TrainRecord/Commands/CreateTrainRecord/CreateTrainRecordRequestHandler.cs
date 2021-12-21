@@ -16,12 +16,12 @@ namespace sport_telegram_bot.Application.Features.TrainRecord.Commands.CreateTra
         
         public async Task<Unit> Handle(CreateTrainRecordRequest request, CancellationToken cancellationToken)
         {
-            var (user, dateTime) = request;
+            var (user, dateAt) = request;
             
             _botDbContext.TrainRecord.Add(new Domain.TrainRecord
             {
                 User = user,
-                DateAt = dateTime
+                DateAt = dateAt
             });
             await _botDbContext.SaveChangesAsync(cancellationToken);
             
