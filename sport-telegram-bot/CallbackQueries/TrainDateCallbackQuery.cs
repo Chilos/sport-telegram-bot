@@ -9,6 +9,7 @@ using sport_telegram_bot.Application.Features.TrainRecord.Commands.CreateTrainRe
 using sport_telegram_bot.Application.Features.TrainRecord.Queries.GetTrainRecordByDate;
 using sport_telegram_bot.Domain;
 using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace sport_telegram_bot.CallbackQueries;
@@ -51,9 +52,13 @@ public class TrainDateCallbackQuery
         
         await _client.EditMessageTextAsync(_chatId,
             _messageId, 
-            $"Дата тренировки выбрана: {date:dd.MM} {Environment.NewLine}" +
-            $"Добавьте упражнения:", 
-            replyMarkup: trainTypeChooseMenu, 
+            $"Дата тренировки: <b>{date:dd.MM}</b> {Environment.NewLine}" +
+            $"Это будет <i>{GetDayOfWeek(date.DayOfWeek)}</i>", 
+            ParseMode.Html,
+            cancellationToken: cancellationToken);
+        await _client.SendTextMessageAsync(_chatId,
+            "Выбирете упражнение для добавления в тренеровку.",
+            replyMarkup: trainTypeChooseMenu,
             cancellationToken: cancellationToken);
     }
     
@@ -71,6 +76,18 @@ public class TrainDateCallbackQuery
 
         return new InlineKeyboardMarkup(buttons);
     }
-    
-    
+
+    private string GetDayOfWeek(DayOfWeek day) => day switch
+    {
+        DayOfWeek.Monday => "понедельник",
+        DayOfWeek.Tuesday => "вторник",
+        DayOfWeek.Wednesday => "среда",
+        DayOfWeek.Thursday => "четверг",
+        DayOfWeek.Friday => "пятница",
+        DayOfWeek.Saturday => "суббота",
+        DayOfWeek.Sunday => "воскресенье",
+        _ => throw new ArgumentOutOfRangeException(nameof(day), day, null)
+    };
+
+
 }

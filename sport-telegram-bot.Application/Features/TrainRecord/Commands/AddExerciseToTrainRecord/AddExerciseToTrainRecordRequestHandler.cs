@@ -6,7 +6,7 @@ using sport_telegram_bot.Application.Abstract;
 
 namespace sport_telegram_bot.Application.Features.TrainRecord.Commands.AddExerciseToTrainRecord
 {
-    public sealed class AddExerciseToTrainRecordRequestHandler: IRequestHandler<AddExerciseToTrainRecordRequest>
+    public sealed class AddExerciseToTrainRecordRequestHandler: IRequestHandler<AddExerciseToTrainRecordRequest, int>
     {
         private readonly IBotDbContext _botDbContext;
         
@@ -15,7 +15,7 @@ namespace sport_telegram_bot.Application.Features.TrainRecord.Commands.AddExerci
             _botDbContext = botDbContext;
         }
         
-        public async Task<Unit> Handle(AddExerciseToTrainRecordRequest request, CancellationToken cancellationToken)
+        public async Task<int> Handle(AddExerciseToTrainRecordRequest request, CancellationToken cancellationToken)
         {
             var (exerciseId, trainId) = request;
             var exercise = await _botDbContext.Exercises
@@ -31,8 +31,8 @@ namespace sport_telegram_bot.Application.Features.TrainRecord.Commands.AddExerci
                 Weight = null
             });
 
-            await _botDbContext.SaveChangesAsync(cancellationToken);
-            return Unit.Value;
+            var id = await _botDbContext.SaveChangesAsync(cancellationToken);
+            return id;
         }
     }
 }

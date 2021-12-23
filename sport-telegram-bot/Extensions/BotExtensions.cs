@@ -16,7 +16,8 @@ namespace sport_telegram_bot.Extensions;
 public static class BotExtensions
 {
     public static async Task HandleMessageAsync(this ITelegramBotClient client, Message message, IMediator mediator,
-        Dictionary<long, (int exerciseId, int previosMessageId)>  questions, CancellationToken cancellationToken)
+        Dictionary<long, (int exerciseId, int previosMessageId)>  questions,
+        Dictionary<long, List<(string messageText, int messageId)>> exercises,  CancellationToken cancellationToken)
     {
         var user = await mediator.Send(new GetUsersRequest(message.From!.Id), cancellationToken);
         if (user == null)
@@ -45,6 +46,7 @@ public static class BotExtensions
 
     public static async Task HandleCallbackQuery(this ITelegramBotClient client, CallbackQuery callbackQuery,
         IMediator mediator, Dictionary<long, (int exerciseId, int previosMessageId)>  questions,
+        Dictionary<long, List<(string messageText, int messageId)>> exercises,
         CancellationToken cancellationToken)
     {
         var messageId = callbackQuery.Message!.MessageId;
@@ -69,13 +71,15 @@ public static class BotExtensions
                 .Execute(payload, cancellationToken),
             "train_type" => new TrainTypeCallbackQuery(client, mediator, chatId, messageId, messageText)
                 .Execute(payload, cancellationToken),
-            "add_exercise" => new AddExerciseCallbackQuery(client, mediator, messageText, chatId, messageId)
+            "add_exercise" => new AddExerciseCallbackQuery(client, mediator, user, chatId, messageId, exercises)
                 .Execute(payload, cancellationToken),
-            "confirm_train" => new ConfirmTrainCallbackQuery(client, chatId, messageId, messageText)
+            "confirm_train" => new ConfirmTrainCallbackQuery(client, user, exercises, chatId, messageId, messageText)
                 .Execute(payload, cancellationToken),
             "remove_train" => new RemoveTrainCallbackQuery(client, mediator, chatId, messageId)
                 .Execute(payload, cancellationToken),
             "begin_exercise" => new BeginExerciseCallbackQuery(client, mediator, user, messageText, chatId, messageId, questions)
+                .Execute(payload, cancellationToken),
+            "back_to_train_type" => new BackToTrainTypeCallbackQuery(client, mediator, chatId, messageId)
                 .Execute(payload, cancellationToken),
             _ => throw new Exception($"not found CallbackQuery {callbackType}")
         };
