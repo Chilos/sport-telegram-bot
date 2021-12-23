@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -25,7 +26,8 @@ namespace sport_telegram_bot.Application.Features.TrainRecord.Queries.GetTrainRe
                 .Include(t => t.Exercises)
                 .ThenInclude(e => e.Exercise)
                 .Include(t => t.User)
-                .FirstOrDefaultAsync(t => t.DateAt == request.date && t.User.Id == request.UserId, cancellationToken);
+                .FirstOrDefaultAsync(t => t.DateAt == request.Date &&
+                                          t.User.Id == request.UserId, cancellationToken);
         }
     }
 }
