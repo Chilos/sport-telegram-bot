@@ -67,15 +67,15 @@ public static class BotExtensions
         {
             "train_date" => new TrainDateCallbackQuery(user, chatId, messageId, mediator, client)
                 .Execute(payload, cancellationToken),
-            "/train_type" => new TrainTypeCallbackQuery(client, mediator, chatId, messageId, messageText)
+            "train_type" => new TrainTypeCallbackQuery(client, mediator, chatId, messageId, messageText)
                 .Execute(payload, cancellationToken),
-            "/add_exercise" => new AddExerciseCallbackQuery(client, mediator, messageText, chatId, messageId)
+            "add_exercise" => new AddExerciseCallbackQuery(client, mediator, messageText, chatId, messageId)
                 .Execute(payload, cancellationToken),
-            "/confirm_train" => new ConfirmTrainCallbackQuery(client, chatId, messageId, messageText)
+            "confirm_train" => new ConfirmTrainCallbackQuery(client, chatId, messageId, messageText)
                 .Execute(payload, cancellationToken),
-            "/removeTrain" => new RemoveTrainCallbackQuery(client, mediator, chatId, messageId)
+            "remove_train" => new RemoveTrainCallbackQuery(client, mediator, chatId, messageId)
                 .Execute(payload, cancellationToken),
-            "/beginExercise" => new BeginExerciseCallbackQuery(client, mediator, user, messageText, chatId, messageId, questions)
+            "begin_exercise" => new BeginExerciseCallbackQuery(client, mediator, user, messageText, chatId, messageId, questions)
                 .Execute(payload, cancellationToken),
             _ => throw new Exception($"not found CallbackQuery {callbackType}")
         };
