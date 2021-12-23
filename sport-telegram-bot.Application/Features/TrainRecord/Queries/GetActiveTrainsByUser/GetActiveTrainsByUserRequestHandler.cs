@@ -22,8 +22,9 @@ namespace sport_telegram_bot.Application.Features.TrainRecord.Queries.GetActiveT
         public async Task<IReadOnlyList<Domain.TrainRecord>> Handle(GetActiveTrainsByUserRequest request, 
             CancellationToken cancellationToken)
         {
+            var currentDate = DateOnly.FromDateTime(DateTime.UtcNow);
             return await _botDbContext.TrainRecord
-                .Where(t => t.User.Id == request.UserId && t.DateAt >= DateOnly.FromDateTime(DateTime.Now))
+                .Where(t => t.User.Id == request.UserId && t.DateAt >= currentDate)
                 .ToListAsync(cancellationToken);
         }
     }
