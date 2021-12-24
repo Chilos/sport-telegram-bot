@@ -7,7 +7,9 @@ using MediatR;
 using sport_telegram_bot.Application.Features.Exercises.Queries.GetExercisesById;
 using sport_telegram_bot.Application.Features.Exercises.Queries.GetExerciseTypes;
 using sport_telegram_bot.Application.Features.TrainRecord.Commands.AddExerciseToTrainRecord;
+using sport_telegram_bot.Domain;
 using Telegram.Bot;
+using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace sport_telegram_bot.CallbackQueries;
@@ -16,30 +18,48 @@ public sealed class AddExerciseCallbackQuery
 {
     private readonly ITelegramBotClient _client;
     private readonly IMediator _mediator;
-    private readonly string _messageText;
+    private readonly User _user;
     private readonly long _chatId;
     private readonly int _messageId;
+    private readonly Dictionary<long, List<(string messageText, int messageId)>> _exercises;
 
-    public AddExerciseCallbackQuery(ITelegramBotClient client, IMediator mediator, string messageText, long chatId, int messageId)
+    public AddExerciseCallbackQuery(ITelegramBotClient client, IMediator mediator, User user, long chatId, int messageId,
+        Dictionary<long, List<(string messageText, int messageId)>> exercises)
     {
         _client = client;
         _mediator = mediator;
-        _messageText = messageText;
+        _user = user;
         _chatId = chatId;
         _messageId = messageId;
+        _exercises = exercises;
     }
     
     public async Task Execute(string[] payloadArray, CancellationToken cancellationToken)
     {
         var (exerciseId, trainId) = ParsePayload(payloadArray);
         var exercise = await _mediator.Send(new GetExercisesByIdRequest(exerciseId), cancellationToken);
-        await _mediator.Send(new AddExerciseToTrainRecordRequest(exerciseId, trainId), cancellationToken);
-        await _client.EditMessageTextAsync(_chatId, 
-            _messageId, 
-            $"{_messageText} {Environment.NewLine}" +
-            $"{exercise.Description}",
-            replyMarkup: await TrainTypeChooseMenuAsync(trainId, cancellationToken), 
+        var exerciseRecordId = await _mediator.Send(new AddExerciseToTrainRecordRequest(exerciseId, trainId), cancellationToken);
+        var notFormattingText = $"В тренировку добавлено упражнение: {Environment.NewLine}" +
+                                $"<a href=\"{exercise.ImageUrl}\">{exercise.Description}</a>";
+        var message = await _client.EditMessageTextAsync(_chatId, 
+            _messageId,
+            notFormattingText,
+            ParseMode.Html,
+            replyMarkup: new InlineKeyboardMarkup(new List<InlineKeyboardButton>
+            {
+                InlineKeyboardButton.WithCallbackData("Удалить", $"remove_exercise:{trainId}:{exerciseRecordId}")
+            }), 
             cancellationToken: cancellationToken);
+        await _client.SendTextMessageAsync(_chatId,
+            "Выбирете упражнение для добавления в тренеровку.",
+            replyMarkup: await TrainTypeChooseMenuAsync(trainId, cancellationToken),
+            cancellationToken: cancellationToken);
+        
+        if (!_exercises.ContainsKey(_user.TelegramId))
+        {
+            _exercises[_user.TelegramId] = new List<(string messageText, int messageId)>();
+        }
+        _exercises[_user.TelegramId].Add((notFormattingText, message.MessageId));
     }
     
     private (int exerciseId, int trainId) ParsePayload(string[] payload)

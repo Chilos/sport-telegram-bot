@@ -20,6 +20,7 @@ namespace sport_telegram_bot
         private readonly TelegramBotClient _client;
         private readonly IMediator _mediator;
         private readonly Dictionary<long, (int exerciseId, int previosMessageId)> _questions = new();
+        private readonly Dictionary<long, List<(string messageText, int messageId)>> _exercises = new();
 
         public Bot(ILogger<Bot> logger, TelegramBotClient client, IMediator mediator)
         {
@@ -61,8 +62,8 @@ namespace sport_telegram_bot
         {
             var task = update.Type switch
             {
-                UpdateType.Message => client.HandleMessageAsync(update.Message, _mediator, _questions, cancellationToken),
-                UpdateType.CallbackQuery => client.HandleCallbackQuery(update.CallbackQuery, _mediator, _questions, cancellationToken),
+                UpdateType.Message => client.HandleMessageAsync(update.Message, _mediator, _questions, _exercises, cancellationToken),
+                UpdateType.CallbackQuery => client.HandleCallbackQuery(update.CallbackQuery, _mediator, _questions, _exercises, cancellationToken),
                 _ => Task.CompletedTask
             };
 

@@ -60,6 +60,10 @@ public class TrainTypeCallbackQuery
         {
             InlineKeyboardButton.WithCallbackData(e.Description, $"add_exercise:{e.Id}:{trainId}")
         }).ToList();
+        buttons.Add(new List<InlineKeyboardButton>
+        {
+            InlineKeyboardButton.WithCallbackData("Назад", $"back_to_train_type:{trainId}")
+        });
 
         return new InlineKeyboardMarkup(buttons);
     }
