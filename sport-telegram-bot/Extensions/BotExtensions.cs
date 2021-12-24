@@ -81,6 +81,8 @@ public static class BotExtensions
                 .Execute(payload, cancellationToken),
             "back_to_train_type" => new BackToTrainTypeCallbackQuery(client, mediator, chatId, messageId)
                 .Execute(payload, cancellationToken),
+            "remove_exercise" => new RemoveExerciseCallbackQuery(client, mediator, chatId, messageId, exercises, user)
+                .Execute(payload, cancellationToken),
             _ => throw new Exception($"not found CallbackQuery {callbackType}")
         };
         

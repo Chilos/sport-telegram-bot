@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
@@ -30,8 +31,8 @@ namespace sport_telegram_bot.Application.Features.TrainRecord.Commands.AddExerci
                 Repetitions = null,
                 Weight = null
             });
-
-            var id = await _botDbContext.SaveChangesAsync(cancellationToken);
+            await _botDbContext.SaveChangesAsync(cancellationToken);
+            var id = trainRecord.Exercises.FirstOrDefault(e => e.Exercise.Id == exerciseId)!.Id;
             return id;
         }
     }
