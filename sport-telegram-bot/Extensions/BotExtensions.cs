@@ -26,7 +26,7 @@ public static class BotExtensions
             user = await mediator.Send(new GetUsersRequest(message.From!.Id), cancellationToken);
         }
         var chatId = message.Chat.Id;
-
+        
         var task = message.Text switch
         {
             "/start" => new StartCommand(client, chatId)
@@ -34,6 +34,8 @@ public static class BotExtensions
             "/add_train" => new AddTrainCommand(client, chatId)
                 .Execute(cancellationToken),
             "/remove_train" => new RemoveTrainCommand(client, mediator, chatId, user)
+                .Execute(cancellationToken),
+            "/edit_train" => new EditTrainCommand(client, mediator, chatId, user)
                 .Execute(cancellationToken),
             "/begin_train" => new BeginTrainCommand(client, mediator, chatId, user)
                 .Execute(cancellationToken),
@@ -82,6 +84,8 @@ public static class BotExtensions
             "back_to_train_type" => new BackToTrainTypeCallbackQuery(client, mediator, chatId, messageId)
                 .Execute(payload, cancellationToken),
             "remove_exercise" => new RemoveExerciseCallbackQuery(client, mediator, chatId, messageId, exercises, user)
+                .Execute(payload, cancellationToken),
+            "edit_train" => new EditTrainCallbackQuery(client, mediator, chatId, exercises, user)
                 .Execute(payload, cancellationToken),
             _ => throw new Exception($"not found CallbackQuery {callbackType}")
         };

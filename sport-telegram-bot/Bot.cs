@@ -51,6 +51,11 @@ namespace sport_telegram_bot
                 },
                 new BotCommand
                 {
+                    Command = "edit_train",
+                    Description = "Редактировать тренировку"
+                },
+                new BotCommand
+                {
                     Command = "begin_train",
                     Description = "Начать тренировку"
                 }
