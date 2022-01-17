@@ -11,7 +11,7 @@ public sealed class ExerciseParamDto
     {
         try
         {
-            var paramStrings = message.Split(" ");
+            var paramStrings = message.Split("-");
             return new ExerciseParamDto
             {
                 Repetitions = int.Parse(paramStrings[0]),
